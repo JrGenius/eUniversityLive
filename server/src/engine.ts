@@ -9,7 +9,7 @@ export class EngineError extends Error {
 
 type SStatus = 'WAITING' | 'READY' | 'OPEN' | 'CORRECTION' | 'ENDED'
 interface QRow {
-  id: string; position: number; text: string; options: string[]; correctIndex: number
+  id: string; position: number; text: string; options: string[]; correctIndex: number | null
   durationSec: number; explanation: string | null
   status: 'PENDING' | 'OPEN' | 'CLOSED'; openedAt: number | null; deadlineAt: number | null
 }
@@ -169,7 +169,7 @@ class Engine {
     }
     if (l.status === 'CORRECTION' && q) {
       s.correction = {
-        correctIndex: q.correctIndex, explanation: q.explanation,
+        correctIndex: q.correctIndex, poll: q.correctIndex === null, explanation: q.explanation,
         distribution: q.options.map((_, i) => [...l.answers.values()].filter((a) => a.choiceIndex === i).length),
       }
       s.top5 = this.ranking(l).list.filter((e) => e.rank <= 5).slice(0, 8).map((e) => ({ rank: e.rank, name: shortName(e.p), score: e.p.totalScore }))
@@ -199,7 +199,7 @@ class Engine {
       participants: l.participants.size,
       answered: (l.status === 'OPEN' || l.status === 'CORRECTION') && a ? { questionId: q!.id, choiceIndex: a.choiceIndex } : null,
     }
-    if (l.status === 'CORRECTION' && q) m.result = { questionId: q.id, choiceIndex: a?.choiceIndex ?? null, correct: !!a?.correct, points: a?.points ?? 0 }
+    if (l.status === 'CORRECTION' && q) m.result = { questionId: q.id, choiceIndex: a?.choiceIndex ?? null, correct: !!a?.correct, points: a?.points ?? 0, poll: q.correctIndex === null }
     if (l.status === 'ENDED') m.final = { correctCount: l.correctCounts?.get(pid) ?? 0, questions: l.questions.length }
     return m
   }
@@ -396,7 +396,7 @@ class Engine {
     if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= q.options.length) throw new EngineError('BAD_CHOICE', 'Réponse invalide.')
 
     const elapsedMs = receivedAt - q.openedAt!
-    const correct = choiceIndex === q.correctIndex
+    const correct = q.correctIndex !== null && choiceIndex === q.correctIndex
     const points = pointsFor(correct, elapsedMs, q.durationSec)
     const work = (async () => {
       const r = await prisma.answer.createMany({

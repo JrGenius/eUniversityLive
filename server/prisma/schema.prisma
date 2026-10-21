@@ -57,7 +57,7 @@ model QuizQuestion {
   position    Int
   text        String
   options     Json
-  correctIndex Int
+  correctIndex Int?
   durationSec Int
   explanation String?
 
@@ -106,7 +106,7 @@ model SessionQuestion {
   position     Int
   text         String
   options      Json
-  correctIndex Int
+  correctIndex Int?
   durationSec  Int
   explanation  String?
   status       QuestionStatus @default(PENDING)

@@ -8,13 +8,13 @@ export interface LiveState {
   code: string; status: 'WAITING' | 'READY' | 'OPEN' | 'CORRECTION' | 'ENDED'; quizTitle: string; serverNow: number
   totalQuestions: number; currentIndex: number; registered: number; connected: number; answered: number
   question: Question | null; nextDurationSec: number | null
-  correction?: { correctIndex: number; explanation: string | null; distribution: number[] }
+  correction?: { correctIndex: number | null; poll?: boolean; explanation: string | null; distribution: number[] }
   top5?: Ranked[]; isLast?: boolean; podium?: Ranked[]; top10?: Ranked[]; participants?: TParticipant[]
 }
 export interface Me {
   nickname: string; fullName: string; total: number; rank: number | null; participants: number
   answered: { questionId: string; choiceIndex: number } | null
-  result?: { questionId: string; choiceIndex: number | null; correct: boolean; points: number }
+  result?: { questionId: string; choiceIndex: number | null; correct: boolean; points: number; poll?: boolean }
   final?: { correctCount: number; questions: number }
 }
 export type Conn = 'connecting' | 'online' | 'offline' | 'denied'

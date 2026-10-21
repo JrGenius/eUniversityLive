@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLive, useRemaining, type LiveState, type Me } from '../lib/live'
 import { Logo } from '../components/ui'
+import { Distribution } from '../components/Parts'
 import { Breathing, Check, Cross, NetStatus, StudentShell, useCountUp } from '../components/student'
 import { firstNameOf, ordinal, tokenKey } from '../lib/student'
 
@@ -202,22 +203,28 @@ function Result({ state, me }: { state: LiveState; me: Me }) {
   const gained = useCountUp(r?.correct ? r.points : 0)
   if (!r) return <Centered><Breathing /><p className="text-xl text-ink-soft">Correction en cours…</p></Centered>
   const answered = r.choiceIndex !== null
-  const kind = r.correct ? 'ok' : answered ? 'wrong' : 'timeout'
-  const tone = { ok: 'bg-ok text-white', wrong: 'bg-bad/10 text-bad', timeout: 'bg-ink/10 text-ink' }[kind]
-  const title = { ok: 'Bien joué !', wrong: 'Pas cette fois !', timeout: 'Temps écoulé' }[kind]
+  const kind = r.poll ? (answered ? 'poll' : 'timeout') : r.correct ? 'ok' : answered ? 'wrong' : 'timeout'
+  const tone = { ok: 'bg-ok text-white', wrong: 'bg-bad/10 text-bad', timeout: 'bg-ink/10 text-ink', poll: 'bg-brand/20 text-brand-dark' }[kind]
+  const title = { ok: 'Bien joué !', wrong: 'Pas cette fois !', timeout: 'Temps écoulé', poll: 'Vote enregistré !' }[kind]
   return (
     <div className="flex flex-1 flex-col gap-5 animate-rise">
       <div className="space-y-3 text-center" role="status">
         <div className={`mx-auto grid h-20 w-20 place-items-center rounded-full animate-pop ${tone}`}>
-          {kind === 'ok' ? <Check className="h-11 w-11" /> : kind === 'wrong' ? <Cross className="h-10 w-10" /> : <Clock />}
+          {kind === 'ok' || kind === 'poll' ? <Check className="h-11 w-11" /> : kind === 'wrong' ? <Cross className="h-10 w-10" /> : <Clock />}
         </div>
         <h1 className="text-3xl font-extrabold">{title}</h1>
         {kind === 'ok' && <p className="text-4xl font-extrabold tabular-nums text-ok">+{gained.toLocaleString('fr-FR')} point{r.points > 1 ? 's' : ''}</p>}
       </div>
-      {kind !== 'ok' && (
+      {kind === 'poll' && (
+        <div className="rounded-2xl border border-line bg-card p-4">
+          <p className="mb-3 text-base font-bold">Répartition des votes</p>
+          <Distribution options={q.options} dist={c.distribution} correct={null} />
+        </div>
+      )}
+      {kind !== 'ok' && kind !== 'poll' && (
         <div className="rounded-2xl border-2 border-ok bg-ok/10 p-4">
           <p className="mb-1 flex items-center gap-2 text-base font-bold text-ok"><Check className="h-5 w-5" />Bonne réponse</p>
-          <p className="break-words text-xl font-bold"><span className="mr-2 text-ink-soft">{LETTERS[c.correctIndex]}.</span>{q.options[c.correctIndex]}</p>
+          <p className="break-words text-xl font-bold"><span className="mr-2 text-ink-soft">{LETTERS[c.correctIndex!]}.</span>{q.options[c.correctIndex!]}</p>
           {kind === 'wrong' && <p className="mt-2 break-words text-base text-ink-soft">Ton choix : {LETTERS[r.choiceIndex!]}. {q.options[r.choiceIndex!]}</p>}
         </div>
       )}

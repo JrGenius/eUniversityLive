@@ -54,7 +54,9 @@ export default function Projection() {
           <div className="grid grid-cols-[1.4fr_1fr] gap-12 animate-rise">
             <div className="space-y-6">
               <h1 className="text-5xl font-extrabold leading-tight">{q.text}</h1>
-              <p className={`flex items-center gap-4 rounded-3xl px-8 py-6 text-4xl font-bold text-white ${ANS[s.correction.correctIndex].bg}`}><span aria-hidden>✓</span>{ANS[s.correction.correctIndex].letter}. {q.options[s.correction.correctIndex]}</p>
+              {s.correction.poll
+                ? <p className="flex items-center gap-4 rounded-3xl bg-ink px-8 py-6 text-4xl font-bold text-white">Sondage — répartition des votes</p>
+                : <p className={`flex items-center gap-4 rounded-3xl px-8 py-6 text-4xl font-bold text-white ${ANS[s.correction.correctIndex!].bg}`}><span aria-hidden>✓</span>{ANS[s.correction.correctIndex!].letter}. {q.options[s.correction.correctIndex!]}</p>}
               <Distribution big options={q.options} dist={s.correction.distribution} correct={s.correction.correctIndex} />
               {s.correction.explanation && <p className="rounded-2xl bg-brand-soft px-6 py-4 text-2xl">{s.correction.explanation}</p>}
             </div>

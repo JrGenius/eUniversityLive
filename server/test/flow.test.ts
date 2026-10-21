@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { prisma } from '../src/db.js'
-import { api, connect, emit, joinStudent, setupSession, sleep, startApp, waitFor, type App } from './helpers.js'
+import { api, connect, emit, joinStudent, makeTeacher, setupSession, sleep, startApp, waitFor, type App } from './helpers.js'
 
 let app: App
 beforeAll(async () => { app = await startApp() })
@@ -106,6 +106,27 @@ describe('boucle complète', () => {
     const late = await joinStudent(app, code, 12)
     expect(late.status).toBe(410)
     ;[teacher, sa].forEach((s) => s.close())
+  })
+
+  it('sondage : vote sans bonne réponse, zéro point, répartition affichée', async () => {
+    const tt = await makeTeacher(app)
+    const q = await api(app, 'POST', '/quizzes', {
+      title: 'Sondage test',
+      questions: [{ text: 'Qui es-tu ?', options: ['Dev', 'Biz'], correctIndex: null, durationSec: 10 }],
+    }, tt)
+    expect(q.status).toBe(201)
+    const s = await api(app, 'POST', '/sessions', { quizId: q.json.id }, tt)
+    const a = await joinStudent(app, s.json.code, 51)
+    const teacher = await connect(app, { role: 'teacher', token: tt, sessionId: s.json.id })
+    const sa = await connect(app, { role: 'student', token: a.json.token })
+    await emit(teacher, 'teacher:prepare'); await emit(teacher, 'teacher:open')
+    const st = await waitFor(sa, 'state', (x) => x.status === 'OPEN')
+    expect((await emit(sa, 'answer', { questionId: st.question.id, choiceIndex: 1 })).ok).toBe(true)
+    const closed = await waitFor(sa, 'state', (x) => x.status === 'CORRECTION', 15000)
+    expect(closed.correction).toMatchObject({ poll: true, correctIndex: null, distribution: [0, 1] })
+    expect((await waitFor(sa, 'me', (m) => !!m.result)).result).toMatchObject({ poll: true, correct: false, points: 0 })
+    expect((await prisma.participant.findFirstOrThrow({ where: { sessionId: s.json.id } })).totalScore).toBe(0)
+    ;[sa, teacher].forEach((x) => x.close())
   })
 
   it('réinitialisation d’accès par le professeur', async () => {

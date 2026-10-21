@@ -7,10 +7,10 @@ const text = (label: string, max: number) =>
 export const questionSchema = z.object({
   text: text('Énoncé', 500),
   options: z.array(text('Proposition', 200)).min(2, 'Au moins deux propositions.').max(4, 'Quatre propositions maximum.'),
-  correctIndex: z.number().int(),
+  correctIndex: z.number().int().nullable(),
   durationSec: z.number().refine((d) => (DURATIONS as readonly number[]).includes(d), 'Durée : 10, 20, 30 ou 60 secondes.'),
   explanation: z.string().trim().max(600, 'Explication : 600 caractères maximum.').optional().nullable(),
-}).refine((q) => q.correctIndex >= 0 && q.correctIndex < q.options.length, { message: 'Choisissez la bonne réponse.', path: ['correctIndex'] })
+}).refine((q) => q.correctIndex === null || (q.correctIndex >= 0 && q.correctIndex < q.options.length), { message: 'Choisissez la bonne réponse.', path: ['correctIndex'] })
 
 export const quizSchema = z.object({
   title: text('Titre', 120),

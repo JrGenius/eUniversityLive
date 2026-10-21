@@ -11,6 +11,7 @@
     "migrate:dev": "prisma migrate dev",
     "seed": "tsx --env-file=../.env src/seed.ts",
     "seed:iwd": "tsx --env-file=../.env src/seed-iwd.ts",
+    "seed:genius": "tsx --env-file=../.env src/seed-genius.ts",
     "test": "vitest run",
     "load": "tsx --env-file=../.env test/load.ts"
   },

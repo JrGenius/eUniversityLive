@@ -183,6 +183,7 @@ export function buildRouter() {
       return {
         position: q.position, text: q.text, options: opts, status: q.status,
         correctIndex: closed ? q.correctIndex : null,
+        poll: q.correctIndex === null,
         distribution: opts.map((_, i) => q.answers.filter((a) => a.choiceIndex === i).length),
         answered: q.answers.length, correct: q.answers.filter((a) => a.correct).length,
       }

@@ -41,8 +41,8 @@ export default function Results() {
                 const max = Math.max(1, ...q.distribution)
                 return (
                   <div key={q.position} className="card space-y-2">
-                    <p className="font-bold">{q.position + 1}. {q.text}</p>
-                    <p className="text-sm text-ink-soft">{q.answered} réponse{q.answered > 1 ? 's' : ''} · {q.answered ? Math.round((q.correct / q.answered) * 100) : 0} % de réussite</p>
+                    <p className="font-bold">{q.position + 1}. {q.text} {q.poll && <span className="ml-1 rounded-full bg-ink px-2 py-0.5 align-middle text-xs font-bold text-white">Sondage</span>}</p>
+                    <p className="text-sm text-ink-soft">{q.answered} réponse{q.answered > 1 ? 's' : ''}{q.poll ? '' : ` · ${q.answered ? Math.round((q.correct / q.answered) * 100) : 0} % de réussite`}</p>
                     {q.options.map((o: string, i: number) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
                         <span className={`w-28 shrink-0 truncate font-semibold ${q.correctIndex === i ? 'text-ok' : ''}`}>{ANS[i].letter}. {o}{q.correctIndex === i && ' ✓'}</span>

@@ -83,7 +83,7 @@ function Stage({ s, serverNow, busy, run, done }: { s: LiveState; serverNow: () 
   if (s.status === 'CORRECTION' && q && s.correction) return (
     <div className="space-y-5">
       <div className="card space-y-4">
-        <p className="text-sm font-bold text-brand-dark">{progress} · correction</p>
+        <p className="text-sm font-bold text-brand-dark">{progress} · {s.correction.poll ? 'sondage' : 'correction'}</p>
         <h1 className="text-2xl font-extrabold">{q.text}</h1>
         <Distribution options={q.options} dist={s.correction.distribution} correct={s.correction.correctIndex} />
         {s.correction.explanation && <p className="rounded-xl bg-brand-soft px-4 py-3">{s.correction.explanation}</p>}

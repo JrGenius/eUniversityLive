@@ -1,7 +1,7 @@
 import { ANS } from './ui'
 import type { Ranked } from '../lib/live'
 
-export function Distribution({ options, dist, correct, big = false }: { options: string[]; dist: number[]; correct: number; big?: boolean }) {
+export function Distribution({ options, dist, correct, big = false }: { options: string[]; dist: number[]; correct: number | null; big?: boolean }) {
   const max = Math.max(1, ...dist)
   return (
     <div className={big ? 'space-y-4' : 'space-y-2'}>
