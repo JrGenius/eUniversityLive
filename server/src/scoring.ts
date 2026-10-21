@@ -1,8 +1,7 @@
 import { BASE_POINTS, MAX_BONUS } from './config.js'
 
 export function speedBonus(elapsedMs: number, durationSec: number): number {
-  // Arrondi à la dizaine : des scores ronds (+930) plutôt qu'arbitraires (+928).
-  const raw = Math.round((MAX_BONUS * (1 - elapsedMs / (durationSec * 1000))) / 10) * 10
+  const raw = Math.round(MAX_BONUS * (1 - elapsedMs / (durationSec * 1000)))
   return Math.min(MAX_BONUS, Math.max(0, raw))
 }
 

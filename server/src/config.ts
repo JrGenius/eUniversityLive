@@ -22,7 +22,7 @@ export const config = {
 }
 
 export const DURATIONS = [10, 20, 30, 60] as const
-// Barème : 500 points garantis par bonne réponse + bonus de rapidité jusqu'à 500
-// (réponse instantanée = 1000, réponse à la dernière seconde = 500).
-export const BASE_POINTS = 500
-export const MAX_BONUS = 500
+// Barème : 5 points garantis par bonne réponse + bonus de rapidité jusqu'à 5
+// (réponse instantanée = 10, réponse à la dernière seconde = 5).
+export const BASE_POINTS = 5
+export const MAX_BONUS = 5

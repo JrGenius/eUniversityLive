@@ -178,7 +178,7 @@ describe('redémarrage', () => {
     await sleep(800)
     expect((await prisma.sessionQuestion.findUniqueOrThrow({ where: { id: st.question.id } })).status).toBe('CLOSED')
     const p = await prisma.participant.findFirstOrThrow({ where: { sessionId } })
-    expect(p.totalScore).toBeGreaterThanOrEqual(500)
+    expect(p.totalScore).toBeGreaterThanOrEqual(5)
     const sa2 = await connect(app, { role: 'student', token: a.json.token })
     expect((await waitFor(sa2, 'me')).result).toMatchObject({ correct: true })
     sa2.close()

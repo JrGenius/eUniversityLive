@@ -124,7 +124,7 @@ function Preview() {
       </div>
 
       {/* Pastilles flottantes */}
-      <div aria-hidden className="absolute -left-8 top-16 z-20 animate-float rounded-2xl border border-line bg-card px-4 py-2 font-extrabold text-ok shadow-lg">+920 pts</div>
+      <div aria-hidden className="absolute -left-8 top-16 z-20 animate-float rounded-2xl border border-line bg-card px-4 py-2 font-extrabold text-ok shadow-lg">+10 pts</div>
       <div aria-hidden className="absolute -right-6 bottom-24 z-20 flex animate-float items-center gap-2 rounded-2xl border border-line bg-card px-4 py-2 font-bold shadow-lg [animation-delay:1.2s]">
         <svg viewBox="0 0 24 24" className="h-5 w-5 text-ok" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
         Réponse enregistrée
