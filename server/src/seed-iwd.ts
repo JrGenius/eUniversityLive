@@ -7,8 +7,8 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 const email = (process.env.JEREMIE_EMAIL || 'jeremie@genius.ci').toLowerCase()
-const password = process.env.JEREMIE_PASSWORD
-if (!password) {
+const jeremiePassword: string = process.env.JEREMIE_PASSWORD || ''
+if (!jeremiePassword) {
   console.error('Définissez JEREMIE_PASSWORD (ex. JEREMIE_PASSWORD=xxx npm run seed:iwd -w server).')
   process.exit(1)
 }
@@ -115,7 +115,7 @@ async function main() {
     create: {
       email,
       name: process.env.JEREMIE_NAME || 'Jérémie',
-      passwordHash: await bcrypt.hash(password, 12),
+      passwordHash: await bcrypt.hash(jeremiePassword, 12),
     },
   })
   let created = 0
