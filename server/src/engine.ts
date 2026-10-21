@@ -60,7 +60,7 @@ class Engine {
   stop() {
     if (this.sweeper) clearInterval(this.sweeper)
     for (const l of this.lives.values()) { clearTimeout(l.timer); clearTimeout(l.countsTimer) }
-    this.lives.clear(); this.byCode.clear(); this.tokens.clear()
+    this.lives.clear(); this.byCode.clear(); this.tokens.clear(); this.loading.clear()
   }
 
   private sweep() {
@@ -71,10 +71,25 @@ class Engine {
     }
   }
 
+  /** Une session ne se charge à froid qu'une fois : sans single-flight, des reconnexions simultanées créeraient des instances Live orphelines. */
+  private loading = new Map<string, Promise<Live | null>>()
+
   async getLive(idOrCode: string): Promise<Live | null> {
-    const id = this.byCode.get(idOrCode) ?? idOrCode
-    const hit = this.lives.get(id)
+    const key = this.byCode.get(idOrCode) ?? idOrCode
+    const hit = this.lives.get(key) ?? this.lives.get(idOrCode)
     if (hit) return hit
+    let p = this.loading.get(key)
+    if (!p) {
+      p = this.loadLive(idOrCode)
+      this.loading.set(key, p)
+      void p.finally(() => this.loading.delete(key))
+    }
+    const l = await p
+    // Une charge concurrente via l'autre clé (code vs id) a pu gagner : ne retourner que l'instance en cache.
+    return l ? this.lives.get(l.id) ?? l : null
+  }
+
+  private async loadLive(idOrCode: string): Promise<Live | null> {
     const s = await prisma.session.findFirst({
       where: { OR: [{ id: idOrCode }, { code: idOrCode }] },
       include: { questions: { orderBy: { position: 'asc' } }, participants: true },

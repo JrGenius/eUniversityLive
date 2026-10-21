@@ -1,16 +1,17 @@
 # Build : compilation du web (React/Vite) et du serveur (TypeScript).
-# NODE_ENV est forcé en development : Coolify injecte les variables
+# NODE_ENV=development est limité à npm ci : Coolify injecte les variables
 # d'environnement au build, et npm sautait les devDependencies sinon.
+# Les builds tournent en NODE_ENV=production : un bundle React en mode
+# développement activerait StrictMode et casserait les envois de réponses.
 FROM node:22-alpine AS build
-ENV NODE_ENV=development
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
 COPY web/package.json web/package.json
 COPY server/prisma server/prisma
-RUN npm ci
+RUN NODE_ENV=development npm ci
 COPY . .
-RUN cd server && npx prisma generate && cd /app && npm run build -w web && npm run build -w server
+RUN cd server && npx prisma generate && cd /app && NODE_ENV=production npm run build -w web && npm run build -w server
 
 # Runtime : uniquement les dépendances de production du serveur
 FROM node:22-alpine

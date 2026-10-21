@@ -119,7 +119,7 @@ function Question({ state, me, call, serverNow, online }: { state: LiveState; me
   live.current = { online, saved }
   const alive = useRef(true)
   const busy = useRef(false)
-  useEffect(() => () => { alive.current = false }, [])
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
 
   /** Envoi idempotent : en cas de statut incertain on revérifie avec le MÊME choix, après retour de la connexion. */
   async function send(choice: number) {
