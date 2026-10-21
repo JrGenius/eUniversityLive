@@ -24,5 +24,6 @@ COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/web/dist web/dist
 WORKDIR /app/server
 EXPOSE 3100
-# Migrations + compte professeur (idempotent) puis démarrage
-CMD ["sh", "-c", "ok=0; for i in $(seq 1 20); do npx prisma migrate deploy && ok=1 && break; sleep 3; done; [ $ok = 1 ] || exit 1; node dist/seed.js; exec node dist/index.js"]
+# Migrations + compte professeur (idempotent) puis démarrage.
+# Si JEREMIE_PASSWORD est défini, crée aussi le compte jeremie@genius.ci et les 8 quiz IWD.
+CMD ["sh", "-c", "ok=0; for i in $(seq 1 20); do npx prisma migrate deploy && ok=1 && break; sleep 3; done; [ $ok = 1 ] || exit 1; node dist/seed.js; if [ -n \"$JEREMIE_PASSWORD\" ]; then node dist/seed-iwd.js; fi; exec node dist/index.js"]
