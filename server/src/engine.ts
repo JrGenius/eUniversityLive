@@ -13,7 +13,7 @@ interface QRow {
   durationSec: number; explanation: string | null
   status: 'PENDING' | 'OPEN' | 'CLOSED'; openedAt: number | null; deadlineAt: number | null
 }
-interface PRow { id: string; fullName: string; nickname: string; nicknameKey: string; studentId: string | null; totalScore: number; claimable: boolean }
+interface PRow { id: string; fullName: string; nickname: string; nicknameKey: string; totalScore: number; claimable: boolean }
 interface AnswerRow { choiceIndex: number; points: number; correct: boolean }
 interface Live {
   id: string; code: string; teacherId: string; quizTitle: string
@@ -91,7 +91,7 @@ class Engine {
         openedAt: q.openedAt?.getTime() ?? null, deadlineAt: q.deadlineAt?.getTime() ?? null,
       })),
       participants: new Map(s.participants.map((p) => [p.id, {
-        id: p.id, fullName: p.fullName, nickname: p.nickname, nicknameKey: p.nicknameKey, studentId: p.studentId,
+        id: p.id, fullName: p.fullName, nickname: p.nickname, nicknameKey: p.nicknameKey,
         totalScore: p.totalScore, claimable: p.claimable,
       }])),
       answers: new Map(), connected: new Map(), inflight: new Set(), lock: Promise.resolve(),
@@ -166,7 +166,7 @@ class Engine {
     }
     if (view === 'teacher') {
       s.participants = [...l.participants.values()].map((p) => ({
-        id: p.id, fullName: p.fullName, nickname: p.nickname, studentId: p.studentId, score: p.totalScore,
+        id: p.id, fullName: p.fullName, nickname: p.nickname, score: p.totalScore,
         connected: l.connected.has(p.id), answered: l.status === 'OPEN' || l.status === 'CORRECTION' ? l.answers.has(p.id) : false,
         claimable: p.claimable,
       }))
@@ -321,15 +321,14 @@ class Engine {
     return { code: l.code, status: l.status, quizTitle: l.quizTitle }
   }
 
-  async join(code: string, firstName: string, lastName: string, studentId: string) {
+  async join(code: string, rawName: string, rawNick: string) {
     const l = await this.getLive(code)
     if (!l) throw new EngineError('NO_SESSION', 'Code de session inconnu.', 404)
     if (l.status === 'ENDED') throw new EngineError('ENDED', 'Cette session est terminée.', 410)
-    const first = titleCase(tidy(firstName)), last = titleCase(tidy(lastName))
-    const fullName = `${first} ${last}`
-    const nickname = `${first} ${[...last][0]!.toUpperCase()}.`
-    const nicknameKey = normalizeNickname(studentId)
-    const taken = 'Ce matricule est déjà inscrit dans cette session. Si c’est bien toi, demande au professeur de réinitialiser ton accès.'
+    const fullName = titleCase(tidy(rawName))
+    const nickname = tidy(rawNick)
+    const nicknameKey = normalizeNickname(nickname)
+    const taken = 'Ce pseudo est déjà pris dans cette session. Si c’est le tien, demande au professeur de réinitialiser ton accès.'
     return this.withLock(l, async () => {
       const token = newToken()
       const tokenHash = hashToken(token)
@@ -343,8 +342,8 @@ class Engine {
         return { token, code: l.code }
       }
       try {
-        const p = await prisma.participant.create({ data: { sessionId: l.id, fullName, nickname, nicknameKey, studentId, tokenHash } })
-        l.participants.set(p.id, { id: p.id, fullName, nickname, nicknameKey, studentId, totalScore: 0, claimable: false })
+        const p = await prisma.participant.create({ data: { sessionId: l.id, fullName, nickname, nicknameKey, tokenHash } })
+        l.participants.set(p.id, { id: p.id, fullName, nickname, nicknameKey, totalScore: 0, claimable: false })
         l.ranks = undefined
         this.tokens.set(tokenHash, { sessionId: l.id, participantId: p.id })
         this.touchCounts(l)

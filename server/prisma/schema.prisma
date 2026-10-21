@@ -125,9 +125,8 @@ model Participant {
   session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   fullName    String
   nickname    String
+  // Clé normalisée du pseudo : unicité par session (rejoin / anti-doublon).
   nicknameKey String
-  // Matricule saisi par l'étudiant (clé d'identité dans la session via nicknameKey).
-  studentId   String?
   // Empreinte SHA-256 du jeton opaque ; null après réinitialisation par le professeur.
   tokenHash  String?  @unique
   claimable  Boolean  @default(false)

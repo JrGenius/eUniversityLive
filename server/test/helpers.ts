@@ -58,6 +58,6 @@ export async function setupSession(app: App, durationSec?: number, questions = 2
   return { tt, sessionId: s.json.id as string, code: s.json.code as string }
 }
 export async function joinStudent(app: App, code: string, i: number) {
-  const r = await api(app, 'POST', '/public/join', { code, firstName: `Prénom${i}`, lastName: `Nom${i}`, studentId: `MAT${i}` })
+  const r = await api(app, 'POST', '/public/join', { code, fullName: `Prénom${i} Nom${i}`, nickname: `Pseudo${i}` })
   return r
 }

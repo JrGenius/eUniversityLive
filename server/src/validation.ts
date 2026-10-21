@@ -22,10 +22,8 @@ const person = (label: string) => text(label, 50).refine((v) => /\p{L}/u.test(v)
 
 export const joinSchema = z.object({
   code: z.string().min(1).max(20),
-  firstName: person('Prénom'),
-  lastName: person('Nom'),
-  studentId: z.string({ error: 'Matricule : champ requis.' }).transform((v) => v.replace(/\s+/g, '').toUpperCase())
-    .pipe(z.string().min(3, 'Matricule : 3 caractères minimum.').max(30, 'Matricule : 30 caractères maximum.').regex(/^[A-Z0-9._\/-]+$/, 'Matricule : lettres, chiffres, - . / _ uniquement.')),
+  fullName: person('Nom complet'),
+  nickname: z.string({ error: 'Pseudo : champ requis.' }).trim().min(2, 'Pseudo : 2 caractères minimum.').max(30, 'Pseudo : 30 caractères maximum.'),
 })
 
 const mail = () => z.string({ error: 'Adresse e-mail : champ requis.' }).trim().toLowerCase().pipe(z.string().email('Adresse e-mail invalide.').max(200))

@@ -6,7 +6,7 @@ import { StudentShell } from '../components/student'
 import { cleanCode, forgetStudent, loadProfile, saveProfile, tokenKey, type Profile } from '../lib/student'
 
 type Field = keyof Profile
-const EMPTY: Profile = { firstName: '', lastName: '', studentId: '' }
+const EMPTY: Profile = { fullName: '', nickname: '' }
 
 export default function Join() {
   const { code: param } = useParams()
@@ -50,7 +50,7 @@ export default function Join() {
 function Resume({ profile, onJoin, onNotMe }: { profile: Profile; onJoin: () => void; onNotMe: () => void }) {
   return (
     <div className="card space-y-5 text-center animate-rise">
-      <h1 className="text-2xl font-extrabold">Content de te revoir, {profile.firstName} !</h1>
+      <h1 className="text-2xl font-extrabold">Content de te revoir, {profile.nickname} !</h1>
       <button className="btn-primary w-full text-lg" onClick={onJoin} autoFocus>Rejoindre</button>
       <button className="min-h-[44px] text-base font-semibold text-ink-soft underline" onClick={onNotMe}>Ce n’est pas moi</button>
     </div>
@@ -63,15 +63,14 @@ function JoinForm({ code }: { code: string }) {
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const refs = { firstName: useRef<HTMLInputElement>(null), lastName: useRef<HTMLInputElement>(null), studentId: useRef<HTMLInputElement>(null) }
+  const refs = { fullName: useRef<HTMLInputElement>(null), nickname: useRef<HTMLInputElement>(null) }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (busy) return
     const local: Partial<Record<Field, string>> = {}
-    if (!v.firstName.trim()) local.firstName = 'Indique ton prénom.'
-    if (!v.lastName.trim()) local.lastName = 'Indique ton nom.'
-    if (!v.studentId.trim()) local.studentId = 'Indique ton matricule.'
+    if (!v.fullName.trim()) local.fullName = 'Indique ton nom complet.'
+    if (!v.nickname.trim()) local.nickname = 'Choisis un pseudo.'
     setErrors(local); setError('')
     const first = (Object.keys(local) as Field[])[0]
     if (first) return refs[first].current?.focus()
@@ -91,7 +90,7 @@ function JoinForm({ code }: { code: string }) {
   const input = (id: Field, label: string, props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <div>
       <label htmlFor={id} className="label">{label}</label>
-      <input id={id} ref={refs[id]} className={`field min-h-[52px] ${errors[id] ? 'field-error' : ''}`} value={v[id]} maxLength={id === 'studentId' ? 30 : 50}
+      <input id={id} ref={refs[id]} className={`field min-h-[52px] ${errors[id] ? 'field-error' : ''}`} value={v[id]} maxLength={id === 'nickname' ? 30 : 100}
         onChange={(e) => { setV({ ...v, [id]: e.target.value }); if (errors[id]) setErrors({ ...errors, [id]: undefined }) }}
         aria-invalid={!!errors[id]} aria-describedby={errors[id] ? `${id}-err` : undefined} {...props} />
       {errors[id] && <p id={`${id}-err`} className="mt-1.5 text-base font-medium text-bad">{errors[id]}</p>}
@@ -101,9 +100,8 @@ function JoinForm({ code }: { code: string }) {
   return (
     <form onSubmit={submit} className="card space-y-4 animate-rise" noValidate>
       <h1 className="text-2xl font-extrabold">Prêt à relever le défi ?</h1>
-      {input('firstName', 'Prénom', { autoComplete: 'given-name', enterKeyHint: 'next', autoCapitalize: 'words' })}
-      {input('lastName', 'Nom', { autoComplete: 'family-name', enterKeyHint: 'next', autoCapitalize: 'words' })}
-      {input('studentId', 'Matricule', { autoComplete: 'off', enterKeyHint: 'go', autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
+      {input('fullName', 'Nom complet', { autoComplete: 'name', enterKeyHint: 'next', autoCapitalize: 'words' })}
+      {input('nickname', 'Pseudo affiché au classement', { autoComplete: 'nickname', enterKeyHint: 'go', autoCapitalize: 'off', autoCorrect: 'off', spellCheck: false })}
       {error && <ErrorBox>{error}</ErrorBox>}
       <button className="btn-primary w-full text-lg" disabled={busy}>{busy ? 'Connexion…' : 'C’est parti !'}</button>
     </form>

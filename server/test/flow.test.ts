@@ -15,7 +15,7 @@ describe('boucle complète', () => {
     expect(a.status).toBe(201)
 
     // pseudo déjà pris : refus, sans fuite du nom complet
-    const dup = await api(app, 'POST', '/public/join', { code, firstName: 'Autre', lastName: 'Personne', studentId: ' mat 1 ' })
+    const dup = await api(app, 'POST', '/public/join', { code, fullName: 'Autre Personne', nickname: ' pseudo1 ' })
     expect(dup.status).toBe(409)
     expect(dup.text).not.toMatch(/Prénom1 Nom1/)
 
@@ -80,7 +80,7 @@ describe('boucle complète', () => {
     const me = await waitFor(sa2, 'me')
     expect(me.result).toMatchObject({ correct: true, points: good.points })
     expect(me.rank).toBe(1)
-    expect(closed.top5[0].name).toBe('Prénom1 N.')
+    expect(closed.top5[0].name).toBe('Pseudo1')
 
     // un jeton invalide ou étranger est refusé
     await expect(connect(app, { role: 'student', token: 'nimporte' })).rejects.toThrow()
@@ -115,13 +115,13 @@ describe('boucle complète', () => {
     const sa = await connect(app, { role: 'student', token: a.json.token })
     const part = await prisma.participant.findFirstOrThrow({ where: { sessionId } })
     // un autre ne peut pas reprendre l'identité sans réinitialisation
-    const steal = await api(app, 'POST', '/public/join', { code, firstName: 'Prénom21', lastName: 'Nom21', studentId: 'MAT21' })
+    const steal = await api(app, 'POST', '/public/join', { code, fullName: 'Prénom21 Nom21', nickname: 'Pseudo21' })
     expect(steal.status).toBe(409)
     const kicked = waitFor(sa, 'kicked')
     expect((await emit(teacher, 'teacher:reset', { participantId: part.id })).ok).toBe(true)
     await kicked
     await expect(connect(app, { role: 'student', token: a.json.token })).rejects.toThrow()
-    const again = await api(app, 'POST', '/public/join', { code, firstName: 'prenom21', lastName: 'NOM21', studentId: 'mat21' })
+    const again = await api(app, 'POST', '/public/join', { code, fullName: 'prenom21 NOM21', nickname: 'pseudo21' })
     expect(again.status).toBe(201)
     const s2 = await connect(app, { role: 'student', token: again.json.token })
     s2.close(); teacher.close()

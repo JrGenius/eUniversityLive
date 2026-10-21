@@ -176,7 +176,7 @@ export function buildRouter() {
     if (!s) return null
     const correctBy = new Map<string, number>()
     for (const q of s.questions) for (const a of q.answers) if (a.correct) correctBy.set(a.participantId, (correctBy.get(a.participantId) ?? 0) + 1)
-    const ranking = rankBy(s.participants, (p) => p.totalScore).map(({ rank, item: p }) => ({ rank, id: p.id, fullName: p.fullName, nickname: p.nickname, studentId: p.studentId, score: p.totalScore, correct: correctBy.get(p.id) ?? 0 }))
+    const ranking = rankBy(s.participants, (p) => p.totalScore).map(({ rank, item: p }) => ({ rank, id: p.id, fullName: p.fullName, nickname: p.nickname, score: p.totalScore, correct: correctBy.get(p.id) ?? 0 }))
     const questions = s.questions.map((q) => {
       const opts = q.options as string[]
       const closed = q.status === 'CLOSED'
@@ -197,7 +197,7 @@ export function buildRouter() {
     const d = await results(req)
     if (!d) return res.status(404).json({ error: 'Session introuvable.' })
     const esc = (v: string | number) => { let s = String(v); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"` }
-    const lines = ['Rang;Nom affiché;Nom complet;Matricule;Points;Bonnes réponses', ...d.participants.map((p) => [p.rank, esc(p.nickname), esc(p.fullName), esc(p.studentId ?? ''), p.score, p.correct].join(';'))]
+    const lines = ['Rang;Pseudo;Nom complet;Points;Bonnes réponses', ...d.participants.map((p) => [p.rank, esc(p.nickname), esc(p.fullName), p.score, p.correct].join(';'))]
     res.type('text/csv; charset=utf-8').set('Content-Disposition', `attachment; filename="resultats-${d.code}.csv"`).send('\ufeff' + lines.join('\n'))
   }))
   r.post('/sessions/:id/participants/:pid/reset', requireTeacher, ah(async (req, res) => {
@@ -218,7 +218,7 @@ export function buildRouter() {
     if (codeFailures.count(ip) >= 30 || !joinAttempts.hit(ip)) return res.status(429).json({ error: 'Trop d’essais. Patientez quelques minutes.' })
     const d = joinSchema.parse(req.body)
     try {
-      res.status(201).json(await engine.join(normalizeCode(d.code), d.firstName, d.lastName, d.studentId))
+      res.status(201).json(await engine.join(normalizeCode(d.code), d.fullName, d.nickname))
     } catch (e) {
       if (e instanceof EngineError && e.code === 'NO_SESSION') codeFailures.hit(ip)
       throw e

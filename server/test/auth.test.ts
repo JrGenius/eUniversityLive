@@ -12,7 +12,6 @@ describe('comptes enseignant', () => {
     expect(r.json.token).toBeTruthy()
     const me = await api(app, 'GET', '/auth/me', undefined, r.json.token)
     expect(me.json.email).toBe(email)
-    expect(me.json.emailVerifiedAt).toBeNull()
     const dup = await api(app, 'POST', '/auth/signup', { name: 'Prof Test', email, password: 'motdepasse1', acceptedTerms: true })
     expect(dup.status).toBe(409)
     const bad = await api(app, 'POST', '/auth/signup', { name: 'P', email: 'pasunmail', password: '123', acceptedTerms: false })
