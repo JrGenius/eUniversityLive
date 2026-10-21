@@ -26,7 +26,7 @@ const sess = await api('POST', '/sessions', { quizId: quiz.json.id }, tt)
 const { id: sessionId, code } = sess.json
 
 let t0 = Date.now()
-const joins = await Promise.all(Array.from({ length: N }, (_, i) => api('POST', '/public/join', { code, fullName: `Load Test ${i}`, nickname: `Load${i}` })))
+const joins = await Promise.all(Array.from({ length: N }, (_, i) => api('POST', '/public/join', { code, firstName: 'Load', lastName: `Test${i}`, studentId: `LOAD${i}` })))
 console.log(`Inscriptions : ${joins.filter((j) => j.status === 201).length}/${N} en ${Date.now() - t0} ms`)
 const students = await Promise.all(joins.map((j) => connect({ role: 'student', token: j.json.token })))
 console.log(`Connexions WebSocket : ${students.length}`)

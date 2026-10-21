@@ -5,31 +5,50 @@ import { ZodError } from 'zod'
 import { config } from './config.js'
 import { prisma } from './db.js'
 import { engine, EngineError } from './engine.js'
-import { RateLimiter, normalizeCode } from './security.js'
-import { joinSchema, loginSchema, quizSchema } from './validation.js'
+import { RateLimiter, normalizeCode, hashToken, newToken } from './security.js'
+import { mailer, sendResetMail } from './mailer.js'
+import { emailSchema, joinSchema, loginSchema, quizSchema, resetSchema, signupSchema } from './validation.js'
 import { rankBy } from './scoring.js'
 
-declare module 'express-serve-static-core' { interface Request { teacherId?: string } }
+declare module 'express-serve-static-core' { interface Request { teacherId?: string; teacherPwdAt?: number } }
 
-export const signTeacher = (id: string) => jwt.sign({ sub: id }, config.jwtSecret, { expiresIn: '12h' })
-export function verifyTeacher(token: string | undefined): string | null {
+const signTeacher = (id: string, pwdAt: number) => jwt.sign({ sub: id, pwd: pwdAt }, config.jwtSecret, { expiresIn: '12h' })
+
+/** Vérifie le JWT, le compte et l'invalidation après changement de mot de passe. */
+export async function authenticateTeacher(token: string | undefined): Promise<{ id: string; pwdAt: number } | null> {
   if (!token) return null
-  try { return (jwt.verify(token, config.jwtSecret) as { sub: string }).sub } catch { return null }
+  let payload: { sub?: string; pwd?: number }
+  try { payload = jwt.verify(token, config.jwtSecret) as typeof payload } catch { return null }
+  if (!payload.sub) return null
+  const t = await prisma.teacher.findUnique({ where: { id: payload.sub }, select: { id: true, passwordChangedAt: true } }).catch(() => null)
+  if (!t) return null
+  const pwdAt = t.passwordChangedAt ? +t.passwordChangedAt : 0
+  if (pwdAt > (payload.pwd ?? 0)) return null // jeton émis avant le dernier changement de mot de passe
+  return { id: t.id, pwdAt }
 }
 
 const loginByIp = new RateLimiter(20, 15 * 60_000)
 const loginByEmail = new RateLimiter(8, 15 * 60_000)
+const signupByIp = new RateLimiter(10, 60 * 60_000)
+const actionByIp = new RateLimiter(15, 60 * 60_000)
 const codeFailures = new RateLimiter(30, 10 * 60_000)
 const joinAttempts = new RateLimiter(600, 60_000)
 const DUMMY_HASH = bcrypt.hashSync('dummy-password', 10)
 
 const ah = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => fn(req, res).catch(next)
 
-function requireTeacher(req: Request, res: Response, next: NextFunction) {
-  const id = verifyTeacher(req.headers.authorization?.replace(/^Bearer /, ''))
-  if (!id) return res.status(401).json({ error: 'Connexion requise.' })
-  req.teacherId = id
+async function requireTeacher(req: Request, res: Response, next: NextFunction) {
+  const t = await authenticateTeacher(req.headers.authorization?.replace(/^Bearer /, ''))
+  if (!t) return res.status(401).json({ error: 'Connexion requise.' })
+  req.teacherId = t.id; req.teacherPwdAt = t.pwdAt
   next()
+}
+
+/** Jeton à usage unique (vérification e-mail / réinitialisation). Exporté pour les tests. */
+export const issueActionToken = async (teacherId: string, purpose: 'verify' | 'reset', ttlMs: number) => {
+  const token = newToken()
+  await prisma.actionToken.create({ data: { teacherId, purpose, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + ttlMs) } })
+  return token
 }
 
 export function buildRouter() {
@@ -46,12 +65,51 @@ export function buildRouter() {
     const t = await prisma.teacher.findUnique({ where: { email: e } })
     const ok = await bcrypt.compare(password, t?.passwordHash ?? DUMMY_HASH)
     if (!t || !ok) return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' })
-    res.json({ token: signTeacher(t.id), teacher: { id: t.id, name: t.name, email: t.email } })
+    const pwdAt = t.passwordChangedAt ? +t.passwordChangedAt : 0
+    res.json({ token: signTeacher(t.id, pwdAt), teacher: { id: t.id, name: t.name, email: t.email, emailVerifiedAt: t.emailVerifiedAt } })
   }))
   r.get('/auth/me', requireTeacher, ah(async (req, res) => {
     const t = await prisma.teacher.findUnique({ where: { id: req.teacherId } })
     if (!t) return res.status(401).json({ error: 'Connexion requise.' })
-    res.json({ id: t.id, name: t.name, email: t.email })
+    res.json({ id: t.id, name: t.name, email: t.email, mailEnabled: mailer.enabled })
+  }))
+
+  const consumeActionToken = async (purpose: 'verify' | 'reset', token: string) => {
+    const t = await prisma.actionToken.findUnique({ where: { tokenHash: hashToken(token) } })
+    if (!t || t.purpose !== purpose || t.usedAt || t.expiresAt < new Date()) return null
+    await prisma.actionToken.update({ where: { id: t.id }, data: { usedAt: new Date() } })
+    return t
+  }
+  const resetUrl = (token: string) => `${config.publicUrl}/enseignant/nouveau-mot-de-passe?token=${token}`
+
+  r.post('/auth/signup', ah(async (req, res) => {
+    if (!signupByIp.hit(req.ip || '?')) return res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.' })
+    const d = signupSchema.parse(req.body)
+    const exists = await prisma.teacher.findUnique({ where: { email: d.email } })
+    if (exists) return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse e-mail.', fields: [{ path: 'email', message: 'Un compte existe déjà avec cette adresse e-mail.' }] })
+    const t = await prisma.teacher.create({ data: { email: d.email, name: d.name, passwordHash: await bcrypt.hash(d.password, 12) } })
+    res.status(201).json({ token: signTeacher(t.id, 0), teacher: { id: t.id, name: t.name, email: t.email } })
+  }))
+  r.post('/auth/forgot', ah(async (req, res) => {
+    const { email } = emailSchema.parse(req.body)
+    if (!actionByIp.hit(req.ip || '?') || !loginByEmail.hit(email)) return res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.' })
+    const t = await prisma.teacher.findUnique({ where: { email } })
+    if (t && mailer.enabled) {
+      const token = await issueActionToken(t.id, 'reset', 3600_000)
+      await sendResetMail(t.email, t.name, resetUrl(token)).catch((e) => console.error('reset mail:', e))
+    }
+    res.json({ ok: true, mailSent: mailer.enabled })
+  }))
+  r.post('/auth/reset', ah(async (req, res) => {
+    const d = resetSchema.parse(req.body)
+    if (!actionByIp.hit(req.ip || '?')) return res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.' })
+    const t = await consumeActionToken('reset', d.token)
+    if (!t) return res.status(400).json({ error: 'Lien invalide ou expiré. Demandez un nouveau lien de réinitialisation.' })
+    await prisma.$transaction([
+      prisma.teacher.update({ where: { id: t.teacherId }, data: { passwordHash: await bcrypt.hash(d.password, 12), passwordChangedAt: new Date() } }),
+      prisma.actionToken.deleteMany({ where: { teacherId: t.teacherId, purpose: 'reset', usedAt: null } }),
+    ])
+    res.json({ ok: true })
   }))
 
   // ---- quiz ----
@@ -118,7 +176,7 @@ export function buildRouter() {
     if (!s) return null
     const correctBy = new Map<string, number>()
     for (const q of s.questions) for (const a of q.answers) if (a.correct) correctBy.set(a.participantId, (correctBy.get(a.participantId) ?? 0) + 1)
-    const ranking = rankBy(s.participants, (p) => p.totalScore).map(({ rank, item: p }) => ({ rank, id: p.id, fullName: p.fullName, nickname: p.nickname, score: p.totalScore, correct: correctBy.get(p.id) ?? 0 }))
+    const ranking = rankBy(s.participants, (p) => p.totalScore).map(({ rank, item: p }) => ({ rank, id: p.id, fullName: p.fullName, nickname: p.nickname, studentId: p.studentId, score: p.totalScore, correct: correctBy.get(p.id) ?? 0 }))
     const questions = s.questions.map((q) => {
       const opts = q.options as string[]
       const closed = q.status === 'CLOSED'
@@ -139,7 +197,7 @@ export function buildRouter() {
     const d = await results(req)
     if (!d) return res.status(404).json({ error: 'Session introuvable.' })
     const esc = (v: string | number) => { let s = String(v); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"` }
-    const lines = ['Rang;Pseudo;Nom complet;Points;Bonnes réponses', ...d.participants.map((p) => [p.rank, esc(p.nickname), esc(p.fullName), p.score, p.correct].join(';'))]
+    const lines = ['Rang;Nom affiché;Nom complet;Matricule;Points;Bonnes réponses', ...d.participants.map((p) => [p.rank, esc(p.nickname), esc(p.fullName), esc(p.studentId ?? ''), p.score, p.correct].join(';'))]
     res.type('text/csv; charset=utf-8').set('Content-Disposition', `attachment; filename="resultats-${d.code}.csv"`).send('\ufeff' + lines.join('\n'))
   }))
   r.post('/sessions/:id/participants/:pid/reset', requireTeacher, ah(async (req, res) => {
@@ -160,7 +218,7 @@ export function buildRouter() {
     if (codeFailures.count(ip) >= 30 || !joinAttempts.hit(ip)) return res.status(429).json({ error: 'Trop d’essais. Patientez quelques minutes.' })
     const d = joinSchema.parse(req.body)
     try {
-      res.status(201).json(await engine.join(normalizeCode(d.code), d.fullName, d.nickname))
+      res.status(201).json(await engine.join(normalizeCode(d.code), d.firstName, d.lastName, d.studentId))
     } catch (e) {
       if (e instanceof EngineError && e.code === 'NO_SESSION') codeFailures.hit(ip)
       throw e

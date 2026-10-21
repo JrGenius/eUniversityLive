@@ -2,7 +2,7 @@ import type { Server as HttpServer } from 'node:http'
 import { Server, type Socket } from 'socket.io'
 import { config } from './config.js'
 import { engine, EngineError, type Hub, type Live } from './engine.js'
-import { verifyTeacher } from './http.js'
+import { authenticateTeacher } from './http.js'
 import { RateLimiter, normalizeCode } from './security.js'
 
 const answerLimiter = new RateLimiter(30, 10_000)
@@ -46,11 +46,11 @@ export function attachSockets(http: HttpServer) {
     if (!badAuth.hit(ip + ':probe') && badAuth.count(ip) > 50) return next(new Error('RATE_LIMIT'))
     try {
       if (a.role === 'teacher') {
-        const tid = verifyTeacher(a.token)
-        if (!tid) return deny('UNAUTHORIZED')
+        const t = await authenticateTeacher(a.token)
+        if (!t) return deny('UNAUTHORIZED')
         const l = await engine.getLive(String(a.sessionId ?? ''))
-        if (!l || l.teacherId !== tid) return deny('FORBIDDEN')
-        Object.assign(socket.data, { role: 'teacher', teacherId: tid, live: l })
+        if (!l || l.teacherId !== t.id) return deny('FORBIDDEN')
+        Object.assign(socket.data, { role: 'teacher', teacherId: t.id, live: l })
       } else if (a.role === 'student') {
         const au = typeof a.token === 'string' ? await engine.authenticate(a.token) : null
         if (!au) return deny('UNAUTHORIZED')

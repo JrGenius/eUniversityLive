@@ -13,6 +13,12 @@ export const config = {
   trustProxy: process.env.TRUST_PROXY === '1',
   // Surchargeable par les tests de charge / tests automatisés.
   disableRateLimit: process.env.DISABLE_RATE_LIMIT === '1',
+  smtpHost: process.env.SMTP_HOST || '',
+  smtpPort: Number(process.env.SMTP_PORT || 587),
+  smtpSecure: process.env.SMTP_SECURE === '1',
+  smtpUser: process.env.SMTP_USER || '',
+  smtpPass: process.env.SMTP_PASS || '',
+  mailFrom: process.env.MAIL_FROM || 'eUniversité Quiz <no-reply@euniversite.ci>',
 }
 
 export const DURATIONS = [10, 20, 30, 60] as const

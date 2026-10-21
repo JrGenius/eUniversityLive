@@ -25,10 +25,14 @@ model Teacher {
   id           String    @id @default(uuid())
   email        String    @unique
   name         String
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  quizzes      Quiz[]
-  sessions     Session[]
+  passwordHash     String
+  emailVerifiedAt  DateTime?
+  // Horodatage du dernier changement de mot de passe : invalide les JWT émis avant.
+  passwordChangedAt DateTime?
+  createdAt        DateTime  @default(now())
+  quizzes          Quiz[]
+  sessions         Session[]
+  actionTokens     ActionToken[]
 }
 
 model Quiz {
@@ -58,6 +62,21 @@ model QuizQuestion {
   explanation String?
 
   @@index([quizId, position])
+}
+
+// Liens à usage unique : vérification d'e-mail et réinitialisation du mot de passe.
+// Seul l'empreinte SHA-256 du jeton est stockée.
+model ActionToken {
+  id         String    @id @default(uuid())
+  teacherId  String
+  teacher    Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  purpose    String // 'verify' | 'reset'
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([teacherId, purpose])
 }
 
 model Session {
@@ -107,6 +126,8 @@ model Participant {
   fullName    String
   nickname    String
   nicknameKey String
+  // Matricule saisi par l'étudiant (clé d'identité dans la session via nicknameKey).
+  studentId   String?
   // Empreinte SHA-256 du jeton opaque ; null après réinitialisation par le professeur.
   tokenHash  String?  @unique
   claimable  Boolean  @default(false)

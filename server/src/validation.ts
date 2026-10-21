@@ -18,10 +18,26 @@ export const quizSchema = z.object({
   questions: z.array(questionSchema).min(1, 'Ajoutez au moins une question.').max(100, '100 questions maximum.'),
 })
 
+const person = (label: string) => text(label, 50).refine((v) => /\p{L}/u.test(v), `${label} : lettres uniquement.`)
+
 export const joinSchema = z.object({
   code: z.string().min(1).max(20),
-  fullName: text('Nom complet', 100),
-  nickname: text('Pseudo', 20).refine((v) => v.length >= 2, 'Pseudo : 2 caractères minimum.'),
+  firstName: person('Prénom'),
+  lastName: person('Nom'),
+  studentId: z.string({ error: 'Matricule : champ requis.' }).transform((v) => v.replace(/\s+/g, '').toUpperCase())
+    .pipe(z.string().min(3, 'Matricule : 3 caractères minimum.').max(30, 'Matricule : 30 caractères maximum.').regex(/^[A-Z0-9._\/-]+$/, 'Matricule : lettres, chiffres, - . / _ uniquement.')),
 })
 
+const mail = () => z.string({ error: 'Adresse e-mail : champ requis.' }).trim().toLowerCase().pipe(z.string().email('Adresse e-mail invalide.').max(200))
+const pw = () => z.string({ error: 'Mot de passe : champ requis.' }).min(8, 'Mot de passe : 8 caractères minimum.').max(200, 'Mot de passe : 200 caractères maximum.')
+
 export const loginSchema = z.object({ email: z.string().email().max(200), password: z.string().min(1).max(200) })
+
+export const signupSchema = z.object({
+  name: text('Nom complet', 100).refine((v) => v.trim().split(/\s+/).length >= 1),
+  email: mail(),
+  password: pw(),
+  acceptedTerms: z.literal(true, { error: 'Vous devez accepter les conditions d’utilisation.' }),
+})
+export const emailSchema = z.object({ email: mail() })
+export const resetSchema = z.object({ token: z.string().min(20).max(200), password: pw() })
