@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  WAITING
+  READY
+  OPEN
+  CORRECTION
+  ENDED
+}
+
+enum QuestionStatus {
+  PENDING
+  OPEN
+  CLOSED
+}
+
+model Teacher {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  quizzes      Quiz[]
+  sessions     Session[]
+}
+
+model Quiz {
+  id          String         @id @default(uuid())
+  teacherId   String
+  teacher     Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  isDemo      Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  questions   QuizQuestion[]
+  sessions    Session[]
+
+  @@index([teacherId])
+}
+
+model QuizQuestion {
+  id          String  @id @default(uuid())
+  quizId      String
+  quiz        Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  position    Int
+  text        String
+  options     Json
+  correctIndex Int
+  durationSec Int
+  explanation String?
+
+  @@index([quizId, position])
+}
+
+model Session {
+  id           String            @id @default(uuid())
+  code         String            @unique
+  teacherId    String
+  teacher      Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  quizId       String?
+  quiz         Quiz?             @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  quizTitle    String
+  status       SessionStatus     @default(WAITING)
+  currentIndex Int               @default(-1)
+  createdAt    DateTime          @default(now())
+  endedAt      DateTime?
+  questions    SessionQuestion[]
+  participants Participant[]
+
+  @@index([teacherId, createdAt])
+  @@index([status])
+}
+
+// Copie figée des questions au moment de l'ouverture de la session.
+model SessionQuestion {
+  id           String         @id @default(uuid())
+  sessionId    String
+  session      Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  position     Int
+  text         String
+  options      Json
+  correctIndex Int
+  durationSec  Int
+  explanation  String?
+  status       QuestionStatus @default(PENDING)
+  openedAt     DateTime?
+  deadlineAt   DateTime?
+  closedAt     DateTime?
+  answers      Answer[]
+
+  @@unique([sessionId, position])
+  @@index([status, deadlineAt])
+}
+
+model Participant {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fullName    String
+  nickname    String
+  nicknameKey String
+  // Empreinte SHA-256 du jeton opaque ; null après réinitialisation par le professeur.
+  tokenHash  String?  @unique
+  claimable  Boolean  @default(false)
+  totalScore Int      @default(0)
+  joinedAt   DateTime @default(now())
+  answers    Answer[]
+
+  @@unique([sessionId, nicknameKey])
+}
+
+model Answer {
+  id            String          @id @default(uuid())
+  questionId    String
+  question      SessionQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  choiceIndex   Int
+  receivedAt    DateTime
+  elapsedMs     Int
+  correct       Boolean
+  points        Int
+  createdAt     DateTime        @default(now())
+
+  // Garantit une seule réponse par participant et par question.
+  @@unique([questionId, participantId])
+}

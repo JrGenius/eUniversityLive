@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: 253 149 3;
+  --brand-dark: 194 101 0;
+  --brand-soft: 255 241 219;
+  --ink: 38 38 43;
+  --ink-soft: 98 98 107;
+  --paper: 250 247 242;
+  --card: 255 255 255;
+  --line: 229 223 213;
+  --ok: 14 124 82;
+  --bad: 200 48 48;
+  --ans-a: 205 56 56;
+  --ans-b: 37 99 235;
+  --ans-c: 14 124 82;
+  --ans-d: 124 58 237;
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-paper text-ink font-sans antialiased; overscroll-behavior-y: none; }
+  button, input, select, textarea { font: inherit; }
+  :focus-visible { outline: 3px solid rgb(var(--ink)); outline-offset: 2px; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-base font-bold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none min-h-[52px]; }
+  .btn-primary { @apply btn bg-brand text-ink shadow-sm hover:bg-brand/90; }
+  .btn-dark { @apply btn bg-ink text-white hover:bg-ink/90; }
+  .btn-ghost { @apply btn bg-card text-ink border border-line hover:bg-brand-soft; }
+  .btn-danger { @apply btn bg-card text-bad border border-bad/40 hover:bg-bad/10; }
+  .btn-sm { @apply min-h-[40px] px-3 py-2 text-sm rounded-xl; }
+  .field { @apply w-full rounded-xl border border-line bg-card px-4 py-3 text-base placeholder:text-ink-soft/60; }
+  .field-error { @apply border-bad; }
+  .card { @apply rounded-3xl border border-line bg-card p-5 shadow-sm; }
+  .label { @apply mb-1.5 block text-sm font-semibold; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
