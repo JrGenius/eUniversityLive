@@ -1,94 +1,111 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
-import { ErrorBox, Logo, Screen, Spinner } from '../components/ui'
+import { ErrorBox, Logo, Spinner } from '../components/ui'
+import { StudentShell } from '../components/student'
+import { cleanCode, forgetStudent, loadProfile, saveProfile, tokenKey, type Profile } from '../lib/student'
 
-export const tokenKey = (code: string) => `euniv:token:${code}`
-const clean = (c: string) => c.toUpperCase().replace(/[^A-Z0-9]/g, '')
+type Field = keyof Profile
+const EMPTY: Profile = { firstName: '', lastName: '', studentId: '' }
 
 export default function Join() {
   const { code: param } = useParams()
   const nav = useNavigate()
-  const [code, setCode] = useState(param ? clean(param) : '')
-  const [checked, setChecked] = useState<{ quizTitle: string } | null>(null)
-  const [fullName, setFullName] = useState(''); const [nickname, setNickname] = useState('')
-  const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(!!param)
+  const code = cleanCode(param ?? '')
+  const [quizTitle, setQuizTitle] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [fatal, setFatal] = useState('')
+  const [resume, setResume] = useState<Profile | null>(null)
 
   useEffect(() => {
-    if (!param) {
-      const last = localStorage.getItem('euniv:last')
-      if (last && localStorage.getItem(tokenKey(last))) nav(`/play/${last}`, { replace: true })
-      return
-    }
-    const c = clean(param)
-    if (localStorage.getItem(tokenKey(c))) return void nav(`/play/${c}`, { replace: true })
-    api(`/public/sessions/${c}`, { auth: false })
-      .then((s) => (s.ended ? setError('Cette session est terminée.') : setChecked(s)))
-      .catch((e: ApiError) => setError(e.message))
+    api(`/public/sessions/${code}`, { auth: false })
+      .then((s) => {
+        if (s.ended && !localStorage.getItem(tokenKey(code))) return setFatal('Cette session est terminée.')
+        setQuizTitle(s.quizTitle)
+        const p = loadProfile()
+        if (p && localStorage.getItem(tokenKey(code))) setResume(p)
+      })
+      .catch((e: ApiError) => setFatal(e.message))
       .finally(() => setLoading(false))
   }, [param])
 
-  async function checkCode(e: FormEvent) {
-    e.preventDefault()
-    setBusy(true); setError('')
-    try { await api(`/public/sessions/${clean(code)}`, { auth: false }); nav(`/j/${clean(code)}`) }
-    catch (err) { setError((err as Error).message) } finally { setBusy(false) }
-  }
-
-  async function join(e: FormEvent) {
-    e.preventDefault()
-    if (!fullName.trim() || nickname.trim().length < 2) return setError('Renseignez votre nom complet et un pseudo (2 caractères minimum).')
-    setBusy(true); setError('')
-    try {
-      const r = await api('/public/join', { auth: false, body: { code: clean(code), fullName, nickname } })
-      localStorage.setItem(tokenKey(r.code), r.token); localStorage.setItem('euniv:last', r.code)
-      nav(`/play/${r.code}`, { replace: true })
-    } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
-  }
-
   return (
-    <Screen>
-      <div className="mb-8 flex flex-col items-center gap-2 text-center animate-rise">
-        <Logo className="h-14" />
-        <h1 className="text-2xl font-extrabold">Quiz en direct</h1>
+    <StudentShell center>
+      <div className="flex flex-col items-center gap-2 pb-6 text-center animate-rise">
+        <Logo className="h-10 opacity-90" />
+        {quizTitle && <p className="max-w-full break-words text-base font-semibold text-ink-soft">{quizTitle}</p>}
       </div>
-      {loading ? <Spinner /> : !param ? (
-        <form onSubmit={checkCode} className="card space-y-4 animate-rise">
-          <div>
-            <label htmlFor="code" className="label">Code de la session</label>
-            <input id="code" className="field text-center text-3xl font-extrabold uppercase tracking-[.3em]" value={code} maxLength={8}
-              onChange={(e) => setCode(clean(e.target.value))} autoComplete="off" autoCapitalize="characters" inputMode="text" placeholder="ABC123" autoFocus />
-            <p className="mt-2 text-sm text-ink-soft">Scannez le QR code projeté ou saisissez le code affiché au tableau.</p>
-          </div>
-          {error && <ErrorBox>{error}</ErrorBox>}
-          <button className="btn-primary w-full" disabled={busy || code.length < 4}>{busy ? 'Vérification…' : 'Continuer'}</button>
-        </form>
-      ) : checked ? (
-        <form onSubmit={join} className="card space-y-4 animate-rise" noValidate>
-          <div className="rounded-xl bg-brand-soft px-4 py-3 text-sm">
-            <p className="font-bold">{checked.quizTitle}</p>
-            <p className="text-ink-soft">Session <span className="font-mono font-bold">{clean(code)}</span></p>
-          </div>
-          <div>
-            <label htmlFor="fn" className="label">Nom complet</label>
-            <input id="fn" className="field" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" maxLength={100} />
-            <p className="mt-1.5 text-sm text-ink-soft">Visible uniquement par le professeur.</p>
-          </div>
-          <div>
-            <label htmlFor="nick" className="label">Pseudo</label>
-            <input id="nick" className="field" value={nickname} onChange={(e) => setNickname(e.target.value)} autoComplete="nickname" maxLength={20} />
-            <p className="mt-1.5 text-sm text-ink-soft">Ce pseudo sera affiché à tous, sur l’écran de la classe.</p>
-          </div>
-          <p className="rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">Une pression valide votre réponse. Vous ne pourrez plus la modifier.</p>
-          {error && <ErrorBox>{error}</ErrorBox>}
-          <button className="btn-primary w-full" disabled={busy}>{busy ? 'Connexion…' : 'Rejoindre la classe'}</button>
-        </form>
-      ) : (
+      {loading ? <Spinner label="Une seconde…" /> : fatal ? (
         <div className="card space-y-4 text-center animate-rise">
-          <ErrorBox>{error}</ErrorBox>
+          <ErrorBox>{fatal}</ErrorBox>
           <button className="btn-ghost w-full" onClick={() => nav('/')}>Saisir un autre code</button>
         </div>
-      )}
-    </Screen>
+      ) : resume ? (
+        <Resume profile={resume} onJoin={() => nav(`/play/${code}`, { replace: true })} onNotMe={() => { forgetStudent(code); setResume(null) }} />
+      ) : <JoinForm code={code} />}
+    </StudentShell>
+  )
+}
+
+function Resume({ profile, onJoin, onNotMe }: { profile: Profile; onJoin: () => void; onNotMe: () => void }) {
+  return (
+    <div className="card space-y-5 text-center animate-rise">
+      <h1 className="text-2xl font-extrabold">Content de te revoir, {profile.firstName} !</h1>
+      <button className="btn-primary w-full text-lg" onClick={onJoin} autoFocus>Rejoindre</button>
+      <button className="min-h-[44px] text-base font-semibold text-ink-soft underline" onClick={onNotMe}>Ce n’est pas moi</button>
+    </div>
+  )
+}
+
+function JoinForm({ code }: { code: string }) {
+  const nav = useNavigate()
+  const [v, setV] = useState<Profile>(() => loadProfile() ?? EMPTY)
+  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const refs = { firstName: useRef<HTMLInputElement>(null), lastName: useRef<HTMLInputElement>(null), studentId: useRef<HTMLInputElement>(null) }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (busy) return
+    const local: Partial<Record<Field, string>> = {}
+    if (!v.firstName.trim()) local.firstName = 'Indique ton prénom.'
+    if (!v.lastName.trim()) local.lastName = 'Indique ton nom.'
+    if (!v.studentId.trim()) local.studentId = 'Indique ton matricule.'
+    setErrors(local); setError('')
+    const first = (Object.keys(local) as Field[])[0]
+    if (first) return refs[first].current?.focus()
+    setBusy(true)
+    try {
+      const r = await api('/public/join', { auth: false, body: { code, ...v } })
+      localStorage.setItem(tokenKey(r.code), r.token); localStorage.setItem('euniv:last', r.code); saveProfile(v)
+      nav(`/play/${r.code}`, { replace: true })
+    } catch (err) {
+      const fields = (err as ApiError).fields ?? []
+      const mapped: Partial<Record<Field, string>> = {}
+      for (const f of fields) if (f.path in v) mapped[f.path as Field] ??= f.message.replace(/^[^:]+ : /, '')
+      if (Object.keys(mapped).length) { setErrors(mapped); refs[Object.keys(mapped)[0] as Field].current?.focus() } else setError((err as Error).message)
+    } finally { setBusy(false) }
+  }
+
+  const input = (id: Field, label: string, props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <div>
+      <label htmlFor={id} className="label">{label}</label>
+      <input id={id} ref={refs[id]} className={`field min-h-[52px] ${errors[id] ? 'field-error' : ''}`} value={v[id]} maxLength={id === 'studentId' ? 30 : 50}
+        onChange={(e) => { setV({ ...v, [id]: e.target.value }); if (errors[id]) setErrors({ ...errors, [id]: undefined }) }}
+        aria-invalid={!!errors[id]} aria-describedby={errors[id] ? `${id}-err` : undefined} {...props} />
+      {errors[id] && <p id={`${id}-err`} className="mt-1.5 text-base font-medium text-bad">{errors[id]}</p>}
+    </div>
+  )
+
+  return (
+    <form onSubmit={submit} className="card space-y-4 animate-rise" noValidate>
+      <h1 className="text-2xl font-extrabold">Prêt à relever le défi ?</h1>
+      {input('firstName', 'Prénom', { autoComplete: 'given-name', enterKeyHint: 'next', autoCapitalize: 'words' })}
+      {input('lastName', 'Nom', { autoComplete: 'family-name', enterKeyHint: 'next', autoCapitalize: 'words' })}
+      {input('studentId', 'Matricule', { autoComplete: 'off', enterKeyHint: 'go', autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
+      {error && <ErrorBox>{error}</ErrorBox>}
+      <button className="btn-primary w-full text-lg" disabled={busy}>{busy ? 'Connexion…' : 'C’est parti !'}</button>
+    </form>
   )
 }

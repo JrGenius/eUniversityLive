@@ -105,7 +105,7 @@ function Stage({ s, serverNow, busy, run, done }: { s: LiveState; serverNow: () 
 
 function Participants({ s, run }: { s: LiveState; run: (ev: string, p?: unknown) => void }) {
   const [filter, setFilter] = useState('')
-  const list = (s.participants ?? []).filter((p) => `${p.nickname} ${p.fullName}`.toLowerCase().includes(filter.toLowerCase()))
+  const list = (s.participants ?? []).filter((p) => `${p.nickname} ${p.fullName} ${p.studentId ?? ''}`.toLowerCase().includes(filter.toLowerCase()))
   return (
     <div className="card space-y-3">
       <div className="flex items-baseline justify-between"><h2 className="font-extrabold">Participants</h2><span className="text-sm font-semibold text-ink-soft">{s.connected} connecté{s.connected > 1 ? 's' : ''} · {s.registered} inscrit{s.registered > 1 ? 's' : ''}</span></div>
@@ -114,11 +114,11 @@ function Participants({ s, run }: { s: LiveState; run: (ev: string, p?: unknown)
         {list.map((p) => (
           <li key={p.id} className="flex items-center gap-2 py-2 text-sm">
             <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${p.connected ? 'bg-ok' : 'bg-line'}`} title={p.connected ? 'Connecté' : 'Déconnecté'} />
-            <span className="flex-1 truncate"><b>{p.nickname}</b> <span className="text-ink-soft">{p.fullName}</span></span>
+            <span className="flex-1 truncate"><b>{p.nickname}</b> <span className="text-ink-soft">{p.fullName}{p.studentId ? ` · ${p.studentId}` : ''}</span></span>
             {s.status === 'OPEN' && p.answered && <span className="font-bold text-ok" title="A répondu">✓</span>}
             {p.claimable
               ? <span className="text-xs font-semibold text-brand-dark">accès réinitialisé</span>
-              : <button className="text-xs font-semibold text-ink-soft underline" onClick={() => confirm(`Réinitialiser l’accès de ${p.nickname} (${p.fullName}) ? Il pourra se réinscrire avec le même pseudo et le même nom complet.`) && run('teacher:reset', { participantId: p.id })}>Réinitialiser</button>}
+              : <button className="text-xs font-semibold text-ink-soft underline" onClick={() => confirm(`Réinitialiser l’accès de ${p.nickname} (${p.fullName}) ? Il pourra se réinscrire avec le même matricule et le même nom.`) && run('teacher:reset', { participantId: p.id })}>Réinitialiser</button>}
           </li>
         ))}
         {!list.length && <li className="py-4 text-center text-ink-soft">Aucun participant.</li>}

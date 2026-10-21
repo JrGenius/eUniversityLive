@@ -1,17 +1,20 @@
 import { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, setTeacherToken } from '../lib/api'
+import { safeNext } from './Signup'
 import { ErrorBox, Logo, Screen } from '../components/ui'
 
 export default function Login() {
   const nav = useNavigate()
+  const [params] = useSearchParams()
+  const next = safeNext(params.get('next'))
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError('')
     try {
       const r = await api('/auth/login', { auth: false, body: { email, password } })
-      setTeacherToken(r.token); nav('/enseignant', { replace: true })
+      setTeacherToken(r.token); nav(next, { replace: true })
     } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
   }
   return (
@@ -22,6 +25,10 @@ export default function Login() {
         <div><label htmlFor="pw" className="label">Mot de passe</label><input id="pw" type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></div>
         {error && <ErrorBox>{error}</ErrorBox>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-base">
+          <Link className="font-semibold text-ink-soft underline" to="/enseignant/mot-de-passe-oublie">Mot de passe oublié ?</Link>
+          <Link className="font-bold text-ink underline" to={`/enseignant/inscription?next=${encodeURIComponent(next)}`}>Créer un compte</Link>
+        </div>
       </form>
     </Screen>
   )

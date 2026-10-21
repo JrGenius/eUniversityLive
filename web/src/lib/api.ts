@@ -3,7 +3,7 @@ export const teacherToken = () => localStorage.getItem(KEY)
 export const setTeacherToken = (t: string | null) => (t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY))
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public fields: { path: string; message: string }[] = []) { super(message) }
+  constructor(public status: number, message: string, public fields: { path: string; message: string }[] = [], public code?: string) { super(message) }
 }
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; auth?: boolean } = {}): Promise<T> {
@@ -21,7 +21,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   const j = await r.json().catch(() => ({}))
   if (!r.ok) {
     if (r.status === 401 && opts.auth !== false && t) { setTeacherToken(null); location.href = '/enseignant/connexion' }
-    throw new ApiError(r.status, j.error || 'Une erreur est survenue.', j.fields)
+    throw new ApiError(r.status, j.error || 'Une erreur est survenue.', j.fields, j.code)
   }
   return j
 }

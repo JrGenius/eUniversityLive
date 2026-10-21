@@ -30,7 +30,7 @@ export default function Results() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-brand-soft"><tr><th className="px-4 py-3">Rang</th><th className="px-4 py-3">Pseudo</th><th className="px-4 py-3">Nom complet</th><th className="px-4 py-3 text-right">Bonnes réponses</th><th className="px-4 py-3 text-right">Points</th></tr></thead>
                 <tbody className="divide-y divide-line">
-                  {d.participants.map((p: any) => <tr key={p.id}><td className="px-4 py-2.5 font-bold">{p.rank}</td><td className="px-4 py-2.5">{p.nickname}</td><td className="px-4 py-2.5">{p.fullName}</td><td className="px-4 py-2.5 text-right tabular-nums">{p.correct}/{d.questions.length}</td><td className="px-4 py-2.5 text-right font-bold tabular-nums">{p.score}</td></tr>)}
+                  {d.participants.map((p: any) => <tr key={p.id}><td className="px-4 py-2.5 font-bold">{p.rank}</td><td className="px-4 py-2.5">{p.nickname}</td><td className="px-4 py-2.5">{p.fullName}{p.studentId ? ` · ${p.studentId}` : ''}</td><td className="px-4 py-2.5 text-right tabular-nums">{p.correct}/{d.questions.length}</td><td className="px-4 py-2.5 text-right font-bold tabular-nums">{p.score}</td></tr>)}
                   {!d.participants.length && <tr><td colSpan={5} className="px-4 py-6 text-center text-ink-soft">Aucun participant.</td></tr>}
                 </tbody>
               </table>

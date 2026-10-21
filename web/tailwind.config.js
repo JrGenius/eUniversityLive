@@ -14,8 +14,11 @@ export default {
       keyframes: {
         pop: { '0%': { transform: 'scale(.9)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
         rise: { '0%': { transform: 'translateY(8px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+        draw: { '0%': { strokeDashoffset: '24' }, '100%': { strokeDashoffset: '0' } },
+        breathe: { '0%,100%': { transform: 'scale(.7)', opacity: '.35' }, '50%': { transform: 'scale(1)', opacity: '1' } },
+        float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
       },
-      animation: { pop: 'pop .25s ease-out both', rise: 'rise .3s ease-out both' },
+      animation: { pop: 'pop .25s ease-out both', rise: 'rise .3s ease-out both', draw: 'draw .4s .1s ease-out both', breathe: 'breathe 1.4s ease-in-out infinite', float: 'float 4s ease-in-out infinite' },
     },
   },
 }

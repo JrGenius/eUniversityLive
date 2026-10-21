@@ -4,6 +4,7 @@ import { api, setTeacherToken } from '../lib/api'
 import { ErrorBox, fmtDate, Spinner, TeacherNav } from '../components/ui'
 
 interface QuizItem { id: string; title: string; description: string | null; isDemo: boolean; questionCount: number; updatedAt: string }
+interface Me { id: string; name: string; email: string; mailEnabled: boolean }
 interface SessionItem { id: string; code: string; quizTitle: string; status: string; createdAt: string; participants: number; questions: number }
 const STATUS: Record<string, string> = { WAITING: 'Salle d’attente', READY: 'En cours', OPEN: 'En cours', CORRECTION: 'En cours', ENDED: 'Terminée' }
 
@@ -11,12 +12,14 @@ export default function Dashboard() {
   const nav = useNavigate()
   const [quizzes, setQuizzes] = useState<QuizItem[] | null>(null)
   const [sessions, setSessions] = useState<SessionItem[] | null>(null)
+  const [me, setMe] = useState<Me | null>(null)
   const [error, setError] = useState(''); const [busy, setBusy] = useState('')
-  const load = () => Promise.all([api('/quizzes'), api('/sessions')]).then(([q, s]) => { setQuizzes(q); setSessions(s) }).catch((e) => setError(e.message))
+  const load = () => Promise.all([api('/quizzes'), api('/sessions'), api('/auth/me')]).then(([q, s, m]) => { setQuizzes(q); setSessions(s); setMe(m) }).catch((e) => setError(e.message))
   useEffect(() => { load() }, [])
 
   const act = async (id: string, fn: () => Promise<unknown>) => { setBusy(id); setError(''); try { await fn() } catch (e) { setError((e as Error).message) } finally { setBusy('') } }
   const start = (q: QuizItem) => act(q.id, async () => { const s = await api('/sessions', { body: { quizId: q.id } }); nav(`/enseignant/session/${s.id}`) })
+  const firstName = me?.name.trim().split(/\s+/)[0] ?? ''
   const dup = (q: QuizItem) => act(q.id, async () => { await api(`/quizzes/${q.id}/duplicate`, { method: 'POST', body: {} }); await load() })
   const del = (q: QuizItem) => confirm(`Supprimer « ${q.title} » ? Les résultats des sessions passées sont conservés.`) && act(q.id, async () => { await api(`/quizzes/${q.id}`, { method: 'DELETE' }); await load() })
 
@@ -31,7 +34,11 @@ export default function Dashboard() {
           </div>
           {error && <ErrorBox>{error}</ErrorBox>}
           {!quizzes ? <Spinner /> : quizzes.length === 0 ? (
-            <div className="card text-center text-ink-soft">Aucun quiz pour l’instant. Créez votre premier quiz pour animer votre cours.</div>
+            <div className="card flex flex-col items-center gap-3 py-10 text-center animate-rise">
+              <h2 className="text-3xl font-extrabold">Bienvenue{firstName ? `, ${firstName}` : ''} 👋</h2>
+              <p className="max-w-md text-lg text-ink-soft">Préparez votre premier quiz, puis invitez vos étudiants.</p>
+              <Link to="/enseignant/quiz/nouveau" className="btn-primary mt-2 text-lg">Créer mon premier quiz</Link>
+            </div>
           ) : (
             <ul className="grid gap-4 md:grid-cols-2">
               {quizzes.map((q) => (

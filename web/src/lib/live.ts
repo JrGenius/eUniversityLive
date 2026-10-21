@@ -3,7 +3,7 @@ import { io, type Socket } from 'socket.io-client'
 
 export interface Question { id: string; index: number; text: string; options: string[]; durationSec: number; openedAt: number | null; deadlineAt: number | null }
 export interface Ranked { rank: number; name: string; score: number }
-export interface TParticipant { id: string; fullName: string; nickname: string; score: number; connected: boolean; answered: boolean; claimable: boolean }
+export interface TParticipant { id: string; fullName: string; nickname: string; studentId: string | null; score: number; connected: boolean; answered: boolean; claimable: boolean }
 export interface LiveState {
   code: string; status: 'WAITING' | 'READY' | 'OPEN' | 'CORRECTION' | 'ENDED'; quizTitle: string; serverNow: number
   totalQuestions: number; currentIndex: number; registered: number; connected: number; answered: number
