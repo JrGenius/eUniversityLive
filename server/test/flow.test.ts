@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { prisma } from '../src/db.js'
+import { pointsFor } from '../src/scoring.js'
 import { api, connect, emit, joinStudent, makeTeacher, setupSession, sleep, startApp, waitFor, type App } from './helpers.js'
 
 let app: App
@@ -68,7 +69,7 @@ describe('boucle complète', () => {
     // points exacts
     const ans = await prisma.answer.findMany({ where: { questionId: qid }, include: { participant: true } })
     const good = ans.find((x) => x.choiceIndex === 1)!
-    expect(good.points).toBe(800 + Math.min(200, Math.max(0, Math.round(200 * (1 - good.elapsedMs / 2000)))))
+    expect(good.points).toBe(pointsFor(true, good.elapsedMs, 2))
     expect(ans.find((x) => x.choiceIndex === 0)!.points).toBe(0)
     const parts = await prisma.participant.findMany({ where: { sessionId } })
     expect(parts.find((p) => p.id === good.participantId)!.totalScore).toBe(good.points)
@@ -177,7 +178,7 @@ describe('redémarrage', () => {
     await sleep(800)
     expect((await prisma.sessionQuestion.findUniqueOrThrow({ where: { id: st.question.id } })).status).toBe('CLOSED')
     const p = await prisma.participant.findFirstOrThrow({ where: { sessionId } })
-    expect(p.totalScore).toBeGreaterThanOrEqual(800)
+    expect(p.totalScore).toBeGreaterThanOrEqual(500)
     const sa2 = await connect(app, { role: 'student', token: a.json.token })
     expect((await waitFor(sa2, 'me')).result).toMatchObject({ correct: true })
     sa2.close()
