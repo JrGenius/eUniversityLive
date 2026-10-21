@@ -1,14 +1,16 @@
-# Build : compilation du web (React/Vite) et du serveur (TypeScript)
+# Build : compilation du web (React/Vite) et du serveur (TypeScript).
+# NODE_ENV est forcé en development : Coolify injecte les variables
+# d'environnement au build, et npm sautait les devDependencies sinon.
 FROM node:22-alpine AS build
+ENV NODE_ENV=development
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
 COPY web/package.json web/package.json
+COPY server/prisma server/prisma
 RUN npm ci
 COPY . .
-RUN npx prisma generate --schema=server/prisma/schema.prisma \
-    && npm run build -w web \
-    && npm run build -w server
+RUN cd server && npx prisma generate && cd /app && npm run build -w web && npm run build -w server
 
 # Runtime : uniquement les dépendances de production du serveur
 FROM node:22-alpine
@@ -16,9 +18,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
-RUN npm ci --omit=dev --workspace=server && npx prisma generate --schema=server/prisma/schema.prisma
+COPY server/prisma server/prisma
+RUN npm ci --omit=dev --workspace=server && cd server && npx prisma generate
 COPY --from=build /app/server/dist server/dist
-COPY --from=build /app/server/prisma server/prisma
 COPY --from=build /app/web/dist web/dist
 WORKDIR /app/server
 EXPOSE 3100
