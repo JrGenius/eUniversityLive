@@ -43,6 +43,41 @@ const QUESTIONS: Q[] = [
   ['Si GENIUS GROUPS était un gbaka…', ['Le CEO annoncerait trois nouvelles destinations en route.', 'Les devs optimiseraient le moteur pendant le trajet.', 'Les commerciaux rempliraient le véhicule avant son arrivée.', 'La finance demanderait qui a encaissé la recette.'], null, 20, 'À vous de défendre votre vote !'],
 ]
 
+const TITLE_CI = 'On connaît papier ! 🇨🇮😂'
+
+const QUESTIONS_CI: Q[] = [
+  ['Quelle est la capitale politique de la Côte d’Ivoire ?', ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San-Pédro'], 2, 20, null],
+  ['Quel est l’ordre des couleurs du drapeau ivoirien, depuis la hampe ?', ['Vert, blanc, orange', 'Orange, blanc, vert', 'Blanc, orange, vert', 'Orange, vert, blanc'], 1, 20, null],
+  ['Le garba, dans sa version classique, c’est…', ['Attiéké et thon frit', 'Riz et poulet', 'Alloco et œufs', 'Foutou et sauce graine'], 0, 20, 'Si tu rates ça, le vendeur garde ton supplément poisson.'],
+  ['L’attiéké est fabriqué principalement à partir de…', ['Maïs', 'Igname', 'Riz', 'Manioc'], 3, 20, null],
+  ['Quel est le surnom de l’équipe nationale ivoirienne de football ?', ['Les Lions', 'Les Éléphants', 'Les Aigles', 'Les Panthères'], 1, 20, null],
+  ['Quelle fête nationale célèbre-t-on le 7 août en Côte d’Ivoire ?', ['La fête du Travail', 'La fête de la Musique', 'L’Indépendance', 'La fête des Mères'], 2, 20, null],
+  ['Quel groupe ivoirien a interprété « Premier Gaou » ?', ['Magic System', 'Espoir 2000', 'Toofan', 'P-Square'], 0, 20, null],
+  ['Alpha Blondy est principalement associé à quel genre musical ?', ['Jazz', 'Rap', 'Country', 'Reggae'], 3, 20, null],
+  ['Quel artiste est surnommé « le Daïshikan » ?', ['A’Salfo', 'DJ Arafat', 'Meiway', 'Didi B'], 1, 20, null],
+  ['Quel artiste ivoirien est associé au Zoblazo ?', ['Tiken Jah Fakoly', 'Serge Beynaud', 'Meiway', 'Kerozen'], 2, 20, null],
+  ['Le groupe Toofan est originaire de quel pays ?', ['Côte d’Ivoire', 'Bénin', 'Ghana', 'Togo'], 3, 20, null],
+  ['Combien de cordes possède généralement une guitare classique ?', ['6', '4', '8', '12'], 0, 20, 'Jouer de la guitare imaginaire en soirée ne compte pas comme formation musicale.'],
+  ['Contre quel pays la Côte d’Ivoire a-t-elle remporté la finale de la CAN 2023, disputée en 2024 ?', ['Sénégal', 'Ghana', 'Nigeria', 'Cameroun'], 2, 20, null],
+  ['Avec quel club Didier Drogba a-t-il remporté la Ligue des champions en 2012 ?', ['Marseille', 'Chelsea', 'Arsenal', 'Real Madrid'], 1, 20, null],
+  ['Combien de joueurs une équipe de football aligne-t-elle au coup d’envoi, gardien compris ?', ['9', '10', '12', '11'], 3, 20, 'Les 14 experts devant la télé ne sont pas comptés dans l’équipe.'],
+  ['Un joueur réalise un « hat-trick » lorsqu’il marque…', ['3 buts dans un match', '2 buts de la tête', 'Sur 3 matchs consécutifs', 'Depuis le milieu de terrain'], 0, 20, null],
+  ['Quel pays a remporté la Coupe du monde masculine de football en 2022 ?', ['France', 'Brésil', 'Argentine', 'Allemagne'], 2, 20, null],
+  ['Au basket, un lancer franc réussi vaut combien de points ?', ['2', '1', '3', '4'], 1, 20, null],
+  ['Quel pays africain est le plus vaste par sa superficie ?', ['Nigeria', 'RDC', 'Afrique du Sud', 'Algérie'], 3, 20, null],
+  ['Quelle planète est surnommée « la planète rouge » ?', ['Mars', 'Vénus', 'Jupiter', 'Saturne'], 0, 20, null],
+  ['Quel océan borde la Côte d’Ivoire ?', ['Indien', 'Pacifique', 'Atlantique', 'Arctique'], 2, 20, null],
+  ['Quel animal est le plus grand mammifère vivant ?', ['Éléphant d’Afrique', 'Baleine bleue', 'Girafe', 'Hippopotame'], 1, 20, null],
+  ['Quelle langue est principalement parlée au Brésil ?', ['Espagnol', 'Français', 'Italien', 'Portugais'], 3, 20, null],
+  ['Dans les films Marvel, de quel pays fictif vient Black Panther ?', ['Wakanda', 'Zamunda', 'Asgard', 'Genovia'], 0, 20, 'Abobo était une réponse ambitieuse, mais elle n’était pas proposée.'],
+  ['Tu dépasses la personne en deuxième position dans une course. Tu es maintenant…', ['Premier', 'Troisième', 'Deuxième', 'Dernier'], 2, 20, null],
+  ['Combien de mois de l’année ont au moins 28 jours ?', ['1', '12', '11', 'Ça dépend de l’année'], 1, 20, null],
+  ['Qu’est-ce qui pèse le plus : 1 kg de fer ou 1 kg de coton ?', ['Le fer', 'Le coton', 'Ça dépend du sac', 'Ils pèsent autant'], 3, 20, null],
+  ['Tu prends 3 mangues dans un panier de 10 mangues. Combien en as-tu prises ?', ['3', '7', '10', '13'], 0, 20, null],
+  ['Un car électrique roule vers Bouaké. De quel côté part la fumée de son moteur électrique ?', ['À gauche', 'À droite', 'Il n’en produit pas', 'Vers Abidjan'], 2, 20, null],
+  ['Le père de Mariam a trois filles : Awa, Fatou et…', ['Aminata', 'Mariam', 'Aya', 'Impossible à savoir'], 1, 20, 'La réponse était dans la question. Mais tu étais pressé de prendre les 1 000 points.'],
+]
+
 const TITLE = 'GENIUS GROUPS — Startup, garba & production 🚀'
 
 async function main() {
@@ -55,23 +90,29 @@ async function main() {
       passwordHash: await bcrypt.hash(helloPassword, 12),
     },
   })
-  const exists = await prisma.quiz.findFirst({ where: { teacherId: teacher.id, title: TITLE } })
-  if (exists) {
-    console.log(`Déjà présent, ignoré : ${TITLE}`)
-  } else {
+  const quizzes: [string, string, Q[]][] = [
+    [TITLE, '20 questions startup africaine pour rire et bader + 3 sondages sans points. GENIUS GROUPS SAS · Section EduTech.', QUESTIONS],
+    [TITLE_CI, '30 questions pour jeunes Ivoiriens : pays, musique, football, culture générale et pièges. 5 manches de 6 questions.', QUESTIONS_CI],
+  ]
+  for (const [title, description, questions] of quizzes) {
+    const exists = await prisma.quiz.findFirst({ where: { teacherId: teacher.id, title } })
+    if (exists) {
+      console.log(`Déjà présent, ignoré : ${title}`)
+      continue
+    }
     await prisma.quiz.create({
       data: {
         teacherId: teacher.id,
-        title: TITLE,
-        description: '20 questions startup africaine pour rire et bader + 3 sondages sans points. GENIUS GROUPS SAS · Section EduTech.',
+        title,
+        description,
         questions: {
-          create: QUESTIONS.map(([text, options, correctIndex, durationSec, explanation], position) => ({
+          create: questions.map(([text, options, correctIndex, durationSec, explanation], position) => ({
             position, text, options, correctIndex, durationSec, explanation,
           })),
         },
       },
     })
-    console.log(`Créé : ${TITLE} (${QUESTIONS.length} questions dont ${QUESTIONS.filter((q) => q[2] === null).length} sondages)`)
+    console.log(`Créé : ${title} (${questions.length} questions dont ${questions.filter((q) => q[2] === null).length} sondages)`)
   }
   console.log(`\nCompte professeur : ${email}`)
 }
