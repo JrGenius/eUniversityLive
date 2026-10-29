@@ -27,4 +27,4 @@ WORKDIR /app/server
 EXPOSE 3100
 # Migrations + compte professeur (idempotent) puis démarrage.
 # Si JEREMIE_PASSWORD est défini, crée aussi le compte jeremie@genius.ci et les 8 quiz IWD.
-CMD ["sh", "-c", "ok=0; for i in $(seq 1 20); do npx prisma migrate deploy && ok=1 && break; sleep 3; done; [ $ok = 1 ] || exit 1; node dist/seed.js; if [ -n \"$JEREMIE_PASSWORD\" ]; then node dist/seed-iwd.js; fi; if [ -n \"$HELLO_PASSWORD\" ]; then node dist/seed-genius.js; fi; exec node dist/index.js"]
+CMD ["sh", "-c", "ok=0; for i in $(seq 1 20); do npx prisma migrate deploy && ok=1 && break; sleep 3; done; [ $ok = 1 ] || exit 1; node dist/seed.js; if [ -n \"$JEREMIE_PASSWORD\" ]; then node dist/seed-iwd.js; fi; if [ -n \"$HELLO_PASSWORD\" ]; then node dist/seed-genius.js; node dist/seed-genius-rbac.js; fi; exec node dist/index.js"]
